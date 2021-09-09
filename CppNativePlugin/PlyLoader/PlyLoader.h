@@ -53,6 +53,27 @@ public:
 	};
 
 	PlyFileObject(const char* fileName);
+
+	template<typename T>
+	void loadFile(const char* fileName)
+	{
+		int mask = 0;
+		T::LoadMask(fileName, mask);
+		if (mask & tri::io::Mask::IOM_WEDGCOLOR)
+			mask |= tri::io::Mask::IOM_FACECOLOR;
+
+		Enable(mask);
+		bool isWedgetexture = (mask & tri::io::Mask::IOM_WEDGTEXCOORD) != 0;
+		T::Open(cm, fileName, mask, NULL);
+		if (isWedgetexture)
+		{
+			// change per face uv to per vertex uv
+			int vn = cm.vn;
+			cm.vert.EnableTexCoord();
+			tri::AttributeSeam::SplitVertex(cm, ExtractVertex, CompareVertex);
+		}
+	}
+
 	vector<float> verts;
 	vector<float> norms;
 	vector<unsigned char> colors;

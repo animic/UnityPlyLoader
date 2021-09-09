@@ -7,6 +7,7 @@
 
 #include <vcg/math/base.h>
 #include <wrap/io_trimesh/import_ply.h>
+#include <wrap/io_trimesh/import_obj.h>
 #include <wrap/io_trimesh/export_ply.h>
 #include <vcg/complex/algorithms/update/texture.h>
 #include <vcg/complex/algorithms/attribute_seam.h>
@@ -32,20 +33,20 @@ inline bool CompareVertex(const CMeshO & m, const CMeshO::VertexType & vA, const
 
 PlyFileObject::PlyFileObject(const char* fileName)
 {
-	int mask = 0;
-	tri::io::ImporterPLY<CMeshO>::LoadMask(fileName, mask);
-	if (mask & tri::io::Mask::IOM_WEDGCOLOR)
-		mask |= tri::io::Mask::IOM_FACECOLOR;
+	std::string filename = fileName;
+	auto ir = std::find_if(std::rbegin(filename), std::rend(filename), [](char c) {
+		return c == '.';
+	}).base();
+	if (ir == std::end(filename)) {
+		//Î´ÕÒµ½À©Õ¹Ãû
+		return;
+	}
 
-	Enable(mask);
-	bool isWedgetexture = (mask & tri::io::Mask::IOM_WEDGTEXCOORD) != 0;
-	tri::io::ImporterPLY<CMeshO>::Open(cm, fileName, mask, NULL);
-	if (isWedgetexture)
-	{
-		// change per face uv to per vertex uv
-		int vn = cm.vn;
-		cm.vert.EnableTexCoord();
-		tri::AttributeSeam::SplitVertex(cm, ExtractVertex, CompareVertex);
+	auto ext = std::string(ir, std::end(filename));
+	if ( ext.compare("ply") == 0){
+		loadFile<tri::io::ImporterPLY<CMeshO>>(fileName);
+	}else if (ext.compare("obj") == 0) {
+		loadFile<tri::io::ImporterOBJ<CMeshO>>(fileName);
 	}
 
 	// read data 
